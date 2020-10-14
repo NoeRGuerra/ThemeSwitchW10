@@ -1,0 +1,14 @@
+dark_mode:
+  brightness: 0
+  enable_schedule: false
+  os_theme: 0
+  start_hour: '14'
+  start_minute: '00'
+  wallpaper: C:/Users/noerg/Pictures/pexels-pixabay-247676.jpg
+light_mode:
+  brightness: 20
+  enable_schedule: false
+  os_theme: 1
+  start_hour: '15'
+  start_minute: '00'
+  wallpaper: C:/Users/noerg/Pictures/light_wallpaper.jpg
