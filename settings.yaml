@@ -2,13 +2,13 @@ dark_mode:
   brightness: 0
   enable_schedule: false
   os_theme: 0
-  start_hour: '14'
+  start_hour: '07'
   start_minute: '00'
   wallpaper: C:/Users/noerg/Pictures/dark_wallpaper.jpg
 light_mode:
   brightness: 20
   enable_schedule: false
   os_theme: 1
-  start_hour: '15'
+  start_hour: '19'
   start_minute: '00'
-  wallpaper: "C:/Users/noerg/Pictures/pexels-jo\xE3o-jesus-921294.jpg"
+  wallpaper: C:/Users/noerg/Pictures/light_wallpaper.jpg

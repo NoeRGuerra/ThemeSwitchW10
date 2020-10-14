@@ -16,8 +16,7 @@ import os
 
 """
 TODO:
-    - Add install location and run commands from AppData/Roaming/ThemeSwitch [Not sure if needed]
-    - Clean code [Last step]
+    - What happens if the wallpaper string in settings.yaml is empty?
 """
 
 
@@ -241,13 +240,24 @@ class Settings(Base):
             self.preview_img_on_canvas(path, i)
 
     def preview_img_on_canvas(self, img_path, i):
-        img = Image.open(img_path)
-        img.thumbnail((128, 96))
-        preview_img = self.preview_canvas[i].create_image(64, 32)
-        self.wallpaper_tk_thumbnail[i] = ImageTk.PhotoImage(img)
+        # If the img_path is invalid (There's an error while displaying the img), return a warning and substitute with "No image selected"
+        if img_path == "":
+            self.preview_canvas[i].create_text(64, 32,
+                                               text='No img selected',
+                                               tag='placeholder_text')
+        else:
+            try:
+                self.preview_canvas[i].delete('placeholder_text')
+                img = Image.open(img_path)
+                img.thumbnail((128, 96))
+                preview_img = self.preview_canvas[i].create_image(64, 32)
+                self.wallpaper_tk_thumbnail[i] = ImageTk.PhotoImage(img)
 
-        self.preview_canvas[i].itemconfig(preview_img,
-                                          image=self.wallpaper_tk_thumbnail[i])
+                self.preview_canvas[i].itemconfig(preview_img,
+                                                  image=self.wallpaper_tk_thumbnail[i])
+            except OSError:
+                messagebox.showerror("Error", "Wallpaper path is invalid.", parent=self.parent)
+                self.preview_img_on_canvas("", i)
 
     def whole_values_only(self, e):
         for i in [0, 1]:
@@ -263,28 +273,33 @@ class Settings(Base):
                 if self.wallpaper_path[i].get():
                     settings[mode]['wallpaper'] = self.wallpaper_path[i].get()
                 settings[mode]['start_hour'] = self.start_hour[i].get()
+                settings[mode]['os_theme'] = i
                 settings[mode]['start_minute'] = self.start_minute[i].get()
                 settings[mode]['enable_schedule'] = self.enable_scheduler[i].get()
             yaml.dump(settings, file)
 
     def read_settings(self):
-        with open("settings.yaml") as file:
-            settings = yaml.load(file, Loader=yaml.FullLoader)
-            for i, mode in enumerate(['dark_mode', 'light_mode']):
-                self.brightness_scale[i].set(settings[mode]['brightness'])
-                self.wallpaper_path[i].set(settings[mode]['wallpaper'])
-                self.start_hour[i].set(settings[mode]['start_hour'])
-                self.start_minute[i].set(settings[mode]['start_minute'])
-                self.enable_scheduler[i].set(settings[mode]['enable_schedule'])
-                if not settings[mode]['enable_schedule']:
-                    self.spin_state[i] = tk.DISABLED
-                else:
-                    self.spin_state[i] = 'readonly'
+        try:
+            with open("settings.yaml") as file:
+                settings = yaml.load(file, Loader=yaml.FullLoader)
+                for i, mode in enumerate(['dark_mode', 'light_mode']):
+                    self.brightness_scale[i].set(settings[mode]['brightness'] or 0)
+                    self.wallpaper_path[i].set(settings[mode]['wallpaper'] or "")
+                    self.start_hour[i].set(settings[mode]['start_hour'] or '09')
+                    self.start_minute[i].set(settings[mode]['start_minute'] or '30')
+                    self.enable_scheduler[i].set(settings[mode]['enable_schedule'] or False)
+                    if not settings[mode]['enable_schedule']:
+                        self.spin_state[i] = tk.DISABLED
+                    else:
+                        self.spin_state[i] = 'readonly'
+        except FileNotFoundError:
+            load_settings()
+            self.read_settings()
 
     def update_spin(self, i):
-        marked = self.enable_scheduler[i].get()
-        self.spin_hour[i].config(state='readonly' if marked else tk.DISABLED)
-        self.spin_minute[i].config(state='readonly' if marked else tk.DISABLED)
+        checked = self.enable_scheduler[i].get()
+        self.spin_hour[i].config(state='readonly' if checked else tk.DISABLED)
+        self.spin_minute[i].config(state='readonly' if checked else tk.DISABLED)
 
     def apply_changes(self):
         self.save_settings()
@@ -308,7 +323,7 @@ class About(Base):
         self.parent = parent
         self.frame = ttk.Frame(self.parent)
         self.frame.pack()
-        Base.set_position(self, 252, 75)
+        Base.set_position(self, 242, 75)
 
         ttk.Label(self.frame, text="Theme switch 1.0.0", font=("Helvetica", 10, "bold")).grid(row=0, column=0)
         ttk.Label(self.frame, text="Programmed by Noé Guerra").grid(row=1, column=0)

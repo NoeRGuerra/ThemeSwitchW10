@@ -18,21 +18,24 @@ def load_settings():
     try:
         with open("settings.yaml") as file:
             settings = yaml.load(file, Loader=yaml.FullLoader)
+            settings = check_settings(settings)
+            if not settings:
+                raise FileNotFoundError
     except FileNotFoundError:
         with open("settings.yaml", "w") as file:
             settings = {
                 "dark_mode": {
                     "brightness": 0,
                     "os_theme": 0,
-                    "wallpaper": "c:/Users/noerg/Pictures/dark_wallpaper.jpg",
+                    "wallpaper": "",
                     "start_hour": "07",
                     "start_minute": "00",
                     "enable_schedule": False
                 },
                 "light_mode": {
                     "brightness": 100,
-                    "os_theme": 0,
-                    "wallpaper": "c:/Users/noerg/Pictures/light_wallpaper.jpg",
+                    "os_theme": 1,
+                    "wallpaper": "",
                     "start_hour": "19",
                     "start_minute": "00",
                     "enable_schedule": False
@@ -41,6 +44,24 @@ def load_settings():
             yaml.dump(settings, file)
     return settings
 
+
+def check_settings(settings):
+    top_keys = ['dark_mode', 'light_mode']
+    low_keys = ['brightness', 'enable_schedule', 'os_theme', 'start_hour', 'start_minute', 'wallpaper']
+    if list(settings.keys()) != top_keys:
+        return False
+    for i, mode in enumerate(settings):
+        if any(value is None for value in settings[mode].values()):
+            return False
+        if any(key not in low_keys for key in settings[mode].keys()):
+            return False
+        if type(settings[mode]['brightness']) != int or settings[mode]['brightness'] < 0 or settings[mode]['brightness'] > 100:
+            return False
+        if type(settings[mode]['enable_schedule']) != bool:
+            return False
+        if type(settings[mode]['os_theme']) != int or settings[mode]['os_theme'] != i:
+            return False
+    return settings
 
 def light_mode_is_on():
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
@@ -147,4 +168,4 @@ def main():
 
 
 if __name__ == "__main__":
-    pass
+    main()
