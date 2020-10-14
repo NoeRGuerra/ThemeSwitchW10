@@ -69,7 +69,7 @@ class MainWindow(Base):
         self.action_btn = ttk.Button(self.parent)
 
         self.initialize_interface()
-        Base.set_position(self, 200, 200)
+        Base.set_position(self, 200, 180)
         self.get_active_mode()
 
     def initialize_interface(self):
@@ -131,10 +131,12 @@ class MainWindow(Base):
 
     def open_about_window(self):
         new_window = tk.Toplevel(self.parent)
+        new_window.title("About")
         About(new_window)
 
     def open_settings_window(self):
         new_window = tk.Toplevel(self.parent)
+        new_window.title("Settings")
         Settings(new_window)
 
 
@@ -155,12 +157,12 @@ class Settings(Base):
 
         self.preview_canvas = [tk.Canvas(self.tabs['dark_mode']), tk.Canvas(self.tabs['light_mode'])]
         self.spin_state = ["disabled", "disabled"]
-        self.spin_hour = [tk.Spinbox(self.tabs['dark_mode']), tk.Spinbox(self.tabs['light_mode'])]
-        self.spin_minute = [tk.Spinbox(self.tabs['dark_mode']), tk.Spinbox(self.tabs['light_mode'])]
+        self.spin_hour = [ttk.Spinbox(self.tabs['dark_mode']), ttk.Spinbox(self.tabs['light_mode'])]
+        self.spin_minute = [ttk.Spinbox(self.tabs['dark_mode']), ttk.Spinbox(self.tabs['light_mode'])]
         self.wallpaper_tk_thumbnail = [ImageTk.PhotoImage, ImageTk.PhotoImage]
 
         self.initialize_interface(tab_control)
-        Base.set_position(self, 400, 250)
+        Base.set_position(self, 275, 270)
 
     def initialize_interface(self, tab_control):
         self.read_settings()
@@ -175,29 +177,38 @@ class Settings(Base):
         for i, tab in enumerate(self.tabs):
             ttk.Label(self.tabs[tab],
                       text="Wallpaper",
-                      anchor=tk.E).grid(row=0, column=0, sticky="e", padx=5, pady=2)
-            self.preview_canvas[i].config(width=96, height=48)
+                      font=("Trebuchet MS", 10),
+                      anchor=tk.E).grid(row=0, column=0, sticky="e", padx=5)
+            self.preview_canvas[i].config(highlightthickness=0,
+                                          width=128, height=64)
             self.preview_canvas[i].bind("<Button-1>",
                                         lambda event, i=i: self.get_wallpaper_path(i))
             self.preview_canvas[i].grid(row=0,
                                         column=1,
-                                        sticky="ew")
+                                        columnspan=3,
+                                        pady=10)
             self.preview_img_on_canvas(self.wallpaper_path[i].get(), i)
 
             ttk.Label(self.tabs[tab],
                       text="Brightness",
-                      anchor=tk.E).grid(row=1, column=0, sticky="e", padx=5, pady=2)
+                      font=("Trebuchet MS", 10)).grid(row=1, column=0, sticky="e", padx=5, pady=5)
             ttk.Scale(self.tabs[tab],
                       from_=0, to=100,
                       orient=tk.HORIZONTAL,
                       variable=self.brightness_scale[i],
                       command=self.whole_values_only).grid(row=1, column=1, columnspan=2, sticky="ew")
-            ttk.Label(self.tabs[tab],
-                      text="0",
-                      textvariable=self.brightness_scale[i]).grid(row=1, column=3, sticky="w")
+            ttk.Spinbox(self.tabs[tab],
+                        textvariable=self.brightness_scale[i],
+                        from_=0, to=100,
+                        increment=1,
+                        wrap=True,
+                        width=3,
+                        state='readonly',
+                        format="%02.0f",).grid(row=1, column=3, sticky='e', padx=(10,0))
 
             ttk.Label(self.tabs[tab],
                       text="Run everyday at:",
+                      font=("Trebuchet MS", 10),
                       anchor=tk.E).grid(row=2, column=0, sticky="e", padx=5, pady=2)
             self.spin_hour[i].config(textvariable=self.start_hour[i],
                                      from_=0, to=23,
@@ -205,7 +216,7 @@ class Settings(Base):
                                      width=2,
                                      format="%02.0f",
                                      state=self.spin_state[i])
-            self.spin_hour[i].grid(row=2, column=1, sticky="w", padx=(0, 2))
+            self.spin_hour[i].grid(row=2, column=1, sticky="e", padx=(0, 2), pady=15)
             self.spin_minute[i].config(textvariable=self.start_minute[i],
                                        from_=0, to=59,
                                        increment=1, wrap=True,
@@ -217,12 +228,10 @@ class Settings(Base):
                             text="Enable task scheduling",
                             variable=self.enable_scheduler[i],
                             command=lambda i=i: self.update_spin(i)).grid(row=3, column=0, columnspan=5)
-            ttk.Button(self.tabs[tab],
-                       text="Cancel",
-                       command=self.parent.destroy).grid(row=5, column=0, columnspan=2)
+
             ttk.Button(self.tabs[tab],
                        text="Apply",
-                       command=self.apply_changes).grid(row=5, column=2, columnspan=2)
+                       command=self.apply_changes).grid(row=5, column=0, columnspan=5, pady=5)
 
     def get_wallpaper_path(self, i):
         path = askopenfilename(parent=self.parent, initialdir=os.path.expanduser(r"~\Pictures"),
@@ -233,8 +242,8 @@ class Settings(Base):
 
     def preview_img_on_canvas(self, img_path, i):
         img = Image.open(img_path)
-        img.thumbnail((96, 48))
-        preview_img = self.preview_canvas[i].create_image(48, 24)
+        img.thumbnail((128, 96))
+        preview_img = self.preview_canvas[i].create_image(64, 32)
         self.wallpaper_tk_thumbnail[i] = ImageTk.PhotoImage(img)
 
         self.preview_canvas[i].itemconfig(preview_img,
@@ -288,8 +297,8 @@ class Settings(Base):
             else:
                 change_task_state(c, "DISABLE")
 
-        messagebox.showinfo("Changes applied",
-                            "Settings have been successfully updated . They will be applied next time you change modes",
+        messagebox.showinfo("Settings saved",
+                            "Settings have been successfully updated and will be applied next time you switch modes.",
                             parent=self.parent)
 
 
@@ -299,12 +308,13 @@ class About(Base):
         self.parent = parent
         self.frame = ttk.Frame(self.parent)
         self.frame.pack()
+        Base.set_position(self, 252, 75)
 
-        ttk.Label(self.frame, text="Theme switch 1.0.0", font="Helvetica 10 bold").grid(row=0, column=0)
+        ttk.Label(self.frame, text="Theme switch 1.0.0", font=("Helvetica", 10, "bold")).grid(row=0, column=0)
         ttk.Label(self.frame, text="Programmed by Noé Guerra").grid(row=1, column=0)
         ttk.Label(self.frame, text="Project page and source code available at:").grid(row=4, column=0)
         link = ttk.Label(self.frame,
-                         text="https://github.com/Nxz02/ThemeSwitchWin10",
+                         text="https://github.com/Nxz02/ThemeSwitchW10",
                          foreground="SteelBlue3",
                          cursor="hand2", )
         link.grid(row=5, column=0)
@@ -313,7 +323,8 @@ class About(Base):
 
 def main():
     root = tk.Tk()
-    root.iconbitmap("icon.ico")
+    root.iconbitmap(True, "icon.ico")
+    root.title("Theme Switcher")
     MainWindow(root)
     root.mainloop()
 
