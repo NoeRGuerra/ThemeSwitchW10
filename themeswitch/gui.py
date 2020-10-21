@@ -9,14 +9,18 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askopenfilename
 from PIL import Image, ImageTk
-from theme_switch import light_mode_is_on, change_sys_theme, load_settings, create_task, change_task_state
+from themeswitch import functions
 import yaml
 import webbrowser
 import os
+from pathlib import Path
 
 """
 TODO:
-    - What happens if the wallpaper string in settings.yaml is empty?
+- Try on another computer
+- Create an installer
+- Make unit tests
+- Add docstrings
 """
 
 
@@ -41,8 +45,9 @@ class Base:
 
     def load_theme(self):
         # Code based on https://stackoverflow.com/a/62934393
-        self.parent.tk.eval("""
-set base_theme_dir awthemes-9.3.2/
+        base_theme_dir = Path(__file__).parent / "awthemes-9.3.2/"
+        self.parent.tk.eval(f"""
+set base_theme_dir "{base_theme_dir.as_posix()}"
 
 package ifneeded awthemes 9.3.2 \
     [list source [file join $base_theme_dir awthemes.tcl]]
@@ -94,25 +99,25 @@ class MainWindow(Base):
         self.parent.config(menu=menubar)
 
     def get_active_mode(self):
-        if light_mode_is_on():
+        if functions.light_mode_is_on():
             self.apply_light_theme()
         else:
             self.apply_dark_theme()
 
     def change_system_mode(self):
-        if light_mode_is_on():
+        if functions.light_mode_is_on():
             mode = 'dark_mode'
             self.apply_dark_theme()
         else:
             mode = 'light_mode'
             self.apply_light_theme()
-        change_sys_theme(**load_settings()[mode])
+        functions.change_sys_theme(**functions.load_settings()[mode])
 
     def apply_dark_theme(self):
         self.style.theme_use("awdark")
         self.style.configure('TButton',
                              relief=tk.FLAT)
-        self.img = ImageTk.PhotoImage(file="moon.png")
+        self.img = ImageTk.PhotoImage(file=Path(__file__).parent / "../icons/moon.png")
         img_on_canvas = self.canvas.create_image(100, 75)
         self.canvas.configure(background='black', highlightbackground='black')
         self.canvas.itemconfig(img_on_canvas, image=self.img)
@@ -122,7 +127,7 @@ class MainWindow(Base):
         self.style.theme_use("awlight")
         self.style.configure('TButton',
                              relief=tk.FLAT)
-        self.img = ImageTk.PhotoImage(file="sun.png")
+        self.img = ImageTk.PhotoImage(file=Path(__file__).parent / "../icons/sun.png")
         img_on_canvas = self.canvas.create_image(100, 75)
         self.canvas.configure(background='white', highlightbackground='white')
         self.canvas.itemconfig(img_on_canvas, image=self.img)
@@ -293,7 +298,7 @@ class Settings(Base):
                     else:
                         self.spin_state[i] = 'readonly'
         except FileNotFoundError:
-            load_settings()
+            functions.load_settings()
             self.read_settings()
 
     def update_spin(self, i):
@@ -307,10 +312,10 @@ class Settings(Base):
             settings = {"start_dark_mode": None, "start_light_mode": None}
             settings[k] = f"{self.start_hour[c].get()}:{self.start_minute[c].get()}"
             if self.enable_scheduler[c].get():
-                change_task_state(c, "ENABLE")
-                create_task(**settings)
+                functions.change_task_state(c, "ENABLE")
+                functions.create_task(**settings)
             else:
-                change_task_state(c, "DISABLE")
+                functions.change_task_state(c, "DISABLE")
 
         messagebox.showinfo("Settings saved",
                             "Settings have been successfully updated and will be applied next time you switch modes.",
@@ -334,15 +339,3 @@ class About(Base):
                          cursor="hand2", )
         link.grid(row=5, column=0)
         link.bind("<Button-1>", lambda event: webbrowser.open_new(event.widget.cget("text")))
-
-
-def main():
-    root = tk.Tk()
-    root.iconbitmap(True, "icon.ico")
-    root.title("Theme Switcher")
-    MainWindow(root)
-    root.mainloop()
-
-
-if __name__ == "__main__":
-    main()

@@ -63,6 +63,7 @@ def check_settings(settings):
             return False
     return settings
 
+
 def light_mode_is_on():
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
                          access=winreg.KEY_READ | winreg.KEY_WOW64_32KEY)
@@ -140,7 +141,7 @@ def check_tasks(settings):
             time = output[-2].strip().split(" ")
             start_time = f"{settings[task_mode[1]]['start_hour']}:{settings[task_mode[1]]['start_minute']}"
             if len(time) > 1 and time[1][:-3] != start_time:
-                start_time = time[:-3]
+                #start_time = time[:-3] # What was this line for? Did I forget to delete it...?
                 settings[task_mode[1]]['start_hour'] = start_time.split(":")[0]
                 settings[task_mode[1]]['start_minute'] = start_time.split(":")[1]
             if state != settings[task_mode[1]]['enable_schedule']:
@@ -156,8 +157,8 @@ def main():
     ap.add_argument("-d", "--darkmode", action="store_const", const='dark_mode')
     ap.add_argument("-l", "--lightmode", action="store_const", const='light_mode')
     args = vars(ap.parse_args())
+    print(args) # args={'darkmode': None, 'lightmode': None} if no args are passed
     mode = args['darkmode'] or args['lightmode']
-
     if type(mode) == str:
         values = settings[mode]
     else:

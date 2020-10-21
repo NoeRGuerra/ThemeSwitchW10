@@ -1,13 +1,13 @@
 dark_mode:
   brightness: 0
-  enable_schedule: false
+  enable_schedule: true
   os_theme: 0
   start_hour: '07'
   start_minute: '00'
   wallpaper: C:/Users/noerg/Pictures/dark_wallpaper.jpg
 light_mode:
-  brightness: 20
-  enable_schedule: false
+  brightness: 40
+  enable_schedule: true
   os_theme: 1
   start_hour: '19'
   start_minute: '00'
