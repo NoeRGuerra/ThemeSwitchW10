@@ -8,6 +8,6 @@ setup(
     license='GNU General Public License v3 (GPLv3)',
     author='Noé R. Guerra',
     author_email='noe.r.guerra@outlook.com',
-    description='Simple program to switch between Windows 10 light and dark themes.',
-    entry_points={"console_scripts": ["realpython=themeswitch.__main__:main"]},
+    description='Simple program to switch between Windows 10 light and dark themes with some customization options.',
+    entry_points={"console_scripts": ["themeswitch=themeswitch.__main__:main"]},
 )
