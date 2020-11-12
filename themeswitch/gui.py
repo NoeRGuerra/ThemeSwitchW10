@@ -8,20 +8,14 @@ Created on Tue Aug 18 07:24:36 2020
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askopenfilename
+from tkinter.scrolledtext import ScrolledText, Scrollbar
 from PIL import Image, ImageTk
 from themeswitch import functions
 import yaml
 import webbrowser
 import os
+import pyperclip
 from pathlib import Path
-
-"""
-TODO:
-- Try on another computer
-- Create an installer
-- Make unit tests
-- Add docstrings
-"""
 
 
 class Base:
@@ -32,10 +26,14 @@ class Base:
 
     def set_position(self, w, h):
         """
-        Puts the window in the center of the screen.
+        Start the window in the center of the screen.
         
-        :param w: width of the window
-        :param h: height of the window
+        :param w: Width of the window in pixels
+        :type w: int
+        :param h: Height of the window in pixels
+        :type h: int
+        :return: None
+        :rtype: None
         """
         ws = self.parent.winfo_screenwidth()  # Screen width
         hs = self.parent.winfo_screenheight()  # Screen height
@@ -44,6 +42,12 @@ class Base:
         self.parent.geometry('{0}x{1}+{2}+{3}'.format(w, h, int(x), int(y)))
 
     def load_theme(self):
+        """
+        Load dark and light themes and allow the program to access them
+
+        :return: None
+        :rtype: None
+        """
         # Code based on https://stackoverflow.com/a/62934393
         base_theme_dir = Path(__file__).parent / "awthemes-9.3.2/"
         self.parent.tk.eval(f"""
@@ -72,25 +76,29 @@ class MainWindow(Base):
         self.canvas = tk.Canvas(self.parent)
         self.action_btn = ttk.Button(self.parent)
 
-        self.initialize_interface()
         Base.set_position(self, 200, 180)
+        self.initialize_interface()
         self.get_active_mode()
+        self.check_wallpaper()
 
     def initialize_interface(self):
         menubar = tk.Menu(self.parent)
 
         settings_menu = tk.Menu(self.parent, menubar, tearoff=0)
-        settings_menu.add_command(label="Settings", command=self.open_settings_window)
-        menubar.add_cascade(label="Edit", menu=settings_menu)
+        settings_menu.add_command(label="Dark mode", command=self.open_dark_mode_settings)
+        settings_menu.add_command(label="Light mode", command=self.open_light_mode_settings)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
 
         about_menu = tk.Menu(self.parent, menubar, tearoff=0)
         about_menu.add_command(label="About this program",
                                command=self.open_about_window)
+        about_menu.add_command(label="Open program log",
+                               command=self.open_log_window)
         menubar.add_cascade(label="About",
                             menu=about_menu)
 
         self.canvas.config(width=200,
-                           height=150, )
+                           height=150,)
         self.canvas.pack()
 
         self.action_btn.config(command=self.change_system_mode)
@@ -133,19 +141,46 @@ class MainWindow(Base):
         self.canvas.itemconfig(img_on_canvas, image=self.img)
         self.action_btn.config(text="Light mode on")
 
+    def check_wallpaper(self):
+        # Maybe there should be a way to turn this on or off?
+        with open(Path(__file__).parent / "settings.yaml") as file:
+            settings = yaml.load(file, Loader=yaml.FullLoader)
+            dark_wp_path = settings['dark_mode']['wallpaper'] or ''
+            light_wp_path = settings['light_mode']['wallpaper'] or ''
+            if dark_wp_path == '' and light_wp_path == '':
+                messagebox.showwarning("No wallpaper set", "Please select a wallpaper for your dark and light mode settings.")
+                self.open_dark_mode_settings()
+            elif dark_wp_path == '':
+                messagebox.showwarning("No wallpaper set", "Please select a wallpaper for your dark mode settings.")
+                self.open_dark_mode_settings()
+            elif light_wp_path == '':
+                messagebox.showwarning("No wallpaper set", "Please select a wallpaper for your light mode settings.")
+                self.open_light_mode_settings()
+            else:
+                return
+
     def open_about_window(self):
         new_window = tk.Toplevel(self.parent)
         new_window.title("About")
         About(new_window)
 
-    def open_settings_window(self):
+    def open_log_window(self):
+        new_window = tk.Toplevel(self.parent)
+        new_window.title("Log")
+        Log(new_window)
+
+    def open_dark_mode_settings(self):
         new_window = tk.Toplevel(self.parent)
         new_window.title("Settings")
-        Settings(new_window)
+        Settings(new_window, 'dark_mode')
 
+    def open_light_mode_settings(self):
+        new_window = tk.Toplevel(self.parent)
+        new_window.title("Settings")
+        Settings(new_window, 'light_mode')
 
 class Settings(Base):
-    def __init__(self, parent):
+    def __init__(self, parent, tab):
         Base.__init__(self, parent)
         self.parent = parent
 
@@ -166,6 +201,7 @@ class Settings(Base):
         self.wallpaper_tk_thumbnail = [ImageTk.PhotoImage, ImageTk.PhotoImage]
 
         self.initialize_interface(tab_control)
+        tab_control.select(self.tabs[tab])
         Base.set_position(self, 275, 270)
 
     def initialize_interface(self, tab_control):
@@ -244,16 +280,34 @@ class Settings(Base):
             self.wallpaper_path[i].set(path)
             self.preview_img_on_canvas(path, i)
 
+    def check_wallpaper_size(self, image):
+        if image.size[0] < self.parent.winfo_screenwidth() and image.size[1] < self.parent.winfo_screenheight():
+            messagebox.showwarning("Warning: Image resolution too low.",
+                                   "The resolution of the selected image is too low. For better results, select an "
+                                   f"image with a resolution higher than {self.parent.winfo_screenwidth()}x{self.parent.winfo_screenheight()}",
+                                   parent=self.parent)
+        elif image.size[0] < self.parent.winfo_screenwidth():
+            messagebox.showwarning("Warning: Image width too low",
+                                   "The width of the selected image is too low. "
+                                   "To avoid black bars or a blurry wallpaper, select an image with a higher resolution.",
+                                   parent=self.parent)
+        elif image.size[1] < self.parent.winfo_screenheight():
+            messagebox.showwarning("Warning: Image height too low.",
+                                   "The height of the selected image is too low. "
+                                   "To avoid black bars or a blurry wallpaper, select an image with a higher resolution.",
+                                   parent=self.parent)
+        return
+
     def preview_img_on_canvas(self, img_path, i):
-        # If the img_path is invalid (There's an error while displaying the img), return a warning and substitute with "No image selected"
         if img_path == "":
             self.preview_canvas[i].create_text(64, 32,
-                                               text='No img selected',
+                                               text='No wallpaper set. \nClick here to select.',
                                                tag='placeholder_text')
         else:
             try:
                 self.preview_canvas[i].delete('placeholder_text')
                 img = Image.open(img_path)
+                self.check_wallpaper_size(img)
                 img.thumbnail((128, 96))
                 preview_img = self.preview_canvas[i].create_image(64, 32)
                 self.wallpaper_tk_thumbnail[i] = ImageTk.PhotoImage(img)
@@ -270,9 +324,9 @@ class Settings(Base):
             self.brightness_scale[i].set(round(value))
 
     def save_settings(self):
-        with open("settings.yaml", "r+") as file:
+        with open(Path(__file__).parent / "settings.yaml", "r+") as file:
             settings = yaml.load(file, Loader=yaml.FullLoader)
-        with open("settings.yaml", "w") as file:
+        with open(Path(__file__).parent / "settings.yaml", "w") as file:
             for i, mode in enumerate(['dark_mode', 'light_mode']):
                 settings[mode]['brightness'] = self.brightness_scale[i].get()
                 if self.wallpaper_path[i].get():
@@ -285,7 +339,7 @@ class Settings(Base):
 
     def read_settings(self):
         try:
-            with open("settings.yaml") as file:
+            with open(Path(__file__).parent / "settings.yaml") as file:
                 settings = yaml.load(file, Loader=yaml.FullLoader)
                 for i, mode in enumerate(['dark_mode', 'light_mode']):
                     self.brightness_scale[i].set(settings[mode]['brightness'] or 0)
@@ -339,3 +393,36 @@ class About(Base):
                          cursor="hand2", )
         link.grid(row=5, column=0)
         link.bind("<Button-1>", lambda event: webbrowser.open_new(event.widget.cget("text")))
+
+class Log(Base):
+    def __init__(self, parent):
+        Base.__init__(self, parent)
+        self.parent = parent
+        self.frame = ttk.Frame(self.parent)
+        self.frame.pack()
+        Base.set_position(self, 266, 270)
+
+        bar = Scrollbar(self.frame, orient=tk.HORIZONTAL)
+        self.log_box = ScrolledText(self.frame, width=35, height=15, wrap='none', font=("Calibri", 10))
+        self.log_box.bind("<Key>", lambda e: "break")
+
+        bar.config(command=self.log_box.xview)
+        self.log_box.config(xscrollcommand=bar.set)
+
+        self.log_box.grid(row=0, columnspan=2)
+        bar.grid(row=1, column=0, sticky='nsew', columnspan=2)
+
+        if functions.light_mode_is_on():
+            self.log_box.config(background='gray88', foreground="gray8")
+        else:
+            self.log_box.config(background='gray15', foreground="gray95")
+        ttk.Button(self.frame, text="Click here to copy", command=self.copy_log_clipboard).grid(row=2, column=0, columnspan=3, sticky="WE")
+        self.read_log()
+
+    def read_log(self):
+        with open(Path(__file__).parent / "full.log") as file:
+            self.text = file.readlines()
+            self.log_box.insert(tk.INSERT, ''.join(self.text))
+
+    def copy_log_clipboard(self):
+        pyperclip.copy(''.join(self.text))
