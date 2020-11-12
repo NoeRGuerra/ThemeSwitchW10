@@ -101,6 +101,7 @@ def main():
         functions.change_sys_theme(values['brightness'], values['wallpaper'], values['os_theme'])
     else:
         def on_closing():
+            settings = functions.load_settings()
             icon = pystray.Icon("ThemeSwitch")
             icon.icon = Image.open(Path(__file__).parent / "../icons/icon.ico")
             icon.title = "Theme Switch"
