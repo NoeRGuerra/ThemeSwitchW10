@@ -279,6 +279,7 @@ def check_tasks(settings):
     Check if the status of the scheduled tasks is the same in Task Scheduler and in the setting files.
     If the tasks do not exists or have a different configuration than in the settings file, they will be updated to
     correct their status and properties.
+    This function will not run until the user has enabled scheduling at least once.
 
     :param settings: Dict containing the settings from settings.yaml
     :type settings: dict
@@ -296,7 +297,7 @@ def check_tasks(settings):
             create_task(*start_time)
             logger.warning("Task %s did not exist in Task Scheduler although it was not deleted by this program."
                            " The task has been created again.", task_mode[0])
-        else:
+        elif task_exists(task_mode[0]):
             # If the task does exist, check if its status and properties are the same ones as in the settings file
             query = os.popen(r'schtasks /query /TN "Theme Switch\{0}" /fo CSV /nh'.format(task_mode[0]))
             output = query.readline().strip().replace('"', '')
