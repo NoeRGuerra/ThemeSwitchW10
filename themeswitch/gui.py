@@ -382,13 +382,13 @@ class About(Base):
         self.parent = parent
         self.frame = ttk.Frame(self.parent)
         self.frame.pack()
-        Base.set_position(self, 242, 75)
+        Base.set_position(self, 274, 75)
 
         ttk.Label(self.frame, text="Theme switch 1.0.0", font=("Helvetica", 10, "bold")).grid(row=0, column=0)
         ttk.Label(self.frame, text="Programmed by Noé Guerra").grid(row=1, column=0)
         ttk.Label(self.frame, text="Project page and source code available at:").grid(row=4, column=0)
         link = ttk.Label(self.frame,
-                         text="https://github.com/Nxz02/ThemeSwitchW10",
+                         text="https://github.com/NoeRGuerra/ThemeSwitchW10",
                          foreground="SteelBlue3",
                          cursor="hand2", )
         link.grid(row=5, column=0)
